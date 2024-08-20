@@ -1,12 +1,9 @@
 import streamlit as st
 
-import numpy as np
 import pandas as pd
 import yfinance as yf
 
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+import altair as alt
 
 
 def clean_etf_data(df):
@@ -141,111 +138,107 @@ if __name__ == "__main__":
 
     # Section trading volume
     st.subheader(f"{asset} ETF Trading volume")
-    trading_vol_fig = px.bar(
-        etf_volumes, x=etf_volumes.index, y=etf_volumes.columns, barmode="relative"
+    trading_vol_fig = (
+        alt.Chart(etf_volumes.reset_index())
+        .transform_fold(etf_volumes.columns, as_=["Funds", "Volume"])
+        .mark_bar()
+        .encode(
+            x=alt.X("index:T", title="Date"),
+            y=alt.Y("Volume:Q", title="Volume"),
+            color="Funds:N",
+        )
     )
-    st.plotly_chart(trading_vol_fig, use_container_width=True)
+    st.altair_chart(trading_vol_fig, use_container_width=True)
 
     # Section net flow individual funds
     st.subheader(f"{asset} ETF Net flow individual funds")
-    net_flow_individual_fig = px.bar(
-        etf_flow_individual,
-        x=etf_flow_individual.index,
-        y=etf_flow_individual.columns,
-        barmode="relative",
+    net_flow_individual_fig = (
+        alt.Chart(etf_flow_individual.reset_index())
+        .transform_fold(
+            etf_flow_individual.columns,
+            as_=["Funds", "Net Flow"],
+        )
+        .mark_bar()
+        .encode(
+            x=alt.X("index:T", title="Date"),
+            y=alt.Y("Net Flow:Q", title="Net Flow"),
+            color="Funds:N",
+        )
     )
-    st.plotly_chart(net_flow_individual_fig, use_container_width=True)
+    st.altair_chart(net_flow_individual_fig, use_container_width=True)
 
     # Section net flow total vs asset price
     st.subheader(f"{asset} ETF Net flow total vs asset price")
-    positive_flow = etf_flow_total[etf_flow_total > 0]
-    negative_flow = etf_flow_total[etf_flow_total < 0]
-    net_flow_total_fig = make_subplots(specs=[[{"secondary_y": True}]])
-    # Sea green bar for positive flow
-    net_flow_total_fig.add_trace(
-        go.Bar(
-            x=positive_flow.index,
-            y=positive_flow,
-            name="Total (positive)",
-            marker_color="seagreen",
-        ),
-        secondary_y=False,
-    )
-    # Orange red bar for negative flow
-    net_flow_total_fig.add_trace(
-        go.Bar(
-            x=negative_flow.index,
-            y=negative_flow,
-            name="Total (negative)",
-            marker_color="orangered",
-        ),
-        secondary_y=False,
+    net_flow_total_fig = (
+        alt.Chart(etf_flow_total.reset_index())
+        .mark_bar()
+        .encode(
+            x=alt.X("index:T", title="Date"),
+            y=alt.Y("Total:Q"),
+            color=alt.condition(
+                alt.datum.Total > 0,
+                alt.value("seagreen"),  # The positive color
+                alt.value("orangered"),  # The negative color
+            ),
+        )
     )
     # Line chart of price
-    net_flow_total_fig.add_trace(
-        go.Scatter(
-            x=price.index,
-            y=price,
-            name=f"{asset} Price",
-            mode="lines",
-            line=dict(color="darkgoldenrod"),
-        ),
-        secondary_y=True,
+    price_fig = (
+        alt.Chart(price.reset_index())
+        .mark_line()
+        .encode(
+            x=alt.X("index:T", title="Date"),
+            y=alt.Y("Close:Q", title="Price"),
+            color=alt.value("crimson"),
+        )
     )
-    net_flow_total_fig.update_layout(barmode="stack")
-    st.plotly_chart(net_flow_total_fig, use_container_width=True)
+    st.altair_chart(
+        (net_flow_total_fig + price_fig).resolve_scale(
+            y="independent",
+        ),
+        use_container_width=True,
+    )
 
     # Section cumulative flow individual vs asset price
     st.subheader(f"{asset} ETF Cumulative flow of individual funds vs asset price")
     cum_flow_individual = etf_flow_individual.cumsum()
-    cum_flow_individual_fig = make_subplots(specs=[[{"secondary_y": True}]])
     # Stacking area chart of flow from individual funds
-    for col in cum_flow_individual.columns:
-        cum_flow_individual_fig.add_trace(
-            go.Scatter(
-                x=cum_flow_individual.index,
-                y=cum_flow_individual[col],
-                name=col,
-                fill="tonexty",
-            ),
-            secondary_y=False,
+    cum_flow_individual_net_fig = (
+        alt.Chart(cum_flow_individual.reset_index())
+        .transform_fold(cum_flow_individual.columns, as_=["Funds", "Net Flow"])
+        .mark_area()
+        .encode(
+            x=alt.X("index:T", title="Date"),
+            y=alt.Y("Net Flow:Q", title="Net Flow"),
+            color=alt.Color("Funds:N").scale(scheme="tableau20"),
         )
-    # Line chart of price
-    cum_flow_individual_fig.add_trace(
-        go.Scatter(
-            x=price.index,
-            y=price,
-            name=f"{asset} Price",
-            mode="lines",
-            line=dict(color="darkgoldenrod"),
-        ),
-        secondary_y=True,
     )
-    st.plotly_chart(cum_flow_individual_fig, use_container_width=True)
+    st.altair_chart(
+        (cum_flow_individual_net_fig + price_fig).resolve_scale(y="independent"),
+        use_container_width=True,
+    )
 
     # Section cumulative flow total vs asset price
     st.subheader(f"{asset} ETF Cumulative flow total vs asset price")
     cum_flow_total = etf_flow_total.cumsum()
-    cum_flow_total_fig = make_subplots(specs=[[{"secondary_y": True}]])
     # Area chart for cumulative flow
-    cum_flow_total_fig.add_trace(
-        go.Scatter(
-            x=cum_flow_total.index,
-            y=cum_flow_total,
-            name="Cumulative flow total",
-            fill="tonexty",
-        ),
-        secondary_y=False,
+    cum_flow_total_fig = (
+        alt.Chart(cum_flow_total.reset_index())
+        .transform_calculate(
+            negative="datum.Total < 0",
+        )
+        .mark_area()
+        .encode(
+            x=alt.X("index:T"),
+            y=alt.Y("Total:Q", impute={"value": 0}),
+            color=alt.Color("negative:N", title="Negative Flow").scale(
+                scheme="set2"
+            ),
+        )
     )
-    # Line chart of price
-    cum_flow_total_fig.add_trace(
-        go.Scatter(
-            x=price.index,
-            y=price,
-            name=f"{asset} Price",
-            mode="lines",
-            line=dict(color="darkgoldenrod"),
+    st.altair_chart(
+        (cum_flow_total_fig + price_fig).resolve_scale(
+            y="independent",
         ),
-        secondary_y=True,
+        use_container_width=True,
     )
-    st.plotly_chart(cum_flow_total_fig, use_container_width=True)
