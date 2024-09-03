@@ -142,9 +142,10 @@ def gen_data(asset):
 
     cum_flow_individual = etf_flow_individual.drop(columns="Date").cumsum()
     cum_flow_individual["Date"] = etf_flow_individual.Date
-    cum_flow_total = pd.DataFrame(
-        {"Date": etf_flow_total.Date, "Total": etf_flow_total.Total.cumsum()}
-    )
+    cum_flow_total = pd.DataFrame({
+        "Date": etf_flow_total.Date,
+        "Total": etf_flow_total.Total.cumsum(),
+    })
 
     return SimpleNamespace(
         etf_volumes=etf_volumes,
@@ -336,16 +337,6 @@ def compound_chart(chart_size={"width": 560, "height": 300}):
         & eth_charts.cum_flow_total_fig
     ).resolve_scale(color="independent")
     # Horizontal concat the charts for btc and eth
-    all_charts = (all_charts_btc | all_charts_eth).resolve_scale(color="independent")
-
-    return all_charts
-
-
-if __name__ == "__main__":
-    # Set page config
-    st.set_page_config(layout="wide", page_icon="📈")
-
-    chart = compound_chart(chart_size={"width": 560, "height": 300})
     all_charts = (all_charts_btc | all_charts_eth).resolve_scale(color="independent")
 
     return all_charts
