@@ -181,7 +181,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
             color="Funds:N",
         )
     )
-    trading_vol_avg_fig = (
+    trading_vol_total_fig = (
         alt.Chart(etf_volumes)
         .transform_fold(
             etf_volumes.drop(columns="Date").columns.to_list(), as_=["Funds", "Volume"]
@@ -189,12 +189,12 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         .mark_line()
         .encode(
             x=alt.X("Date:T", axis=alt.Axis(tickCount="day")),
-            y=alt.Y("mean(Volume):Q", title="Average Volume"),
+            y=alt.Y("sum(Volume):Q", title="Total Volume"),
             color=alt.value("crimson"),
         )
     )
     # Combine trading volume and average trading volume
-    trading_vol_fig += trading_vol_avg_fig
+    trading_vol_fig += trading_vol_total_fig
     trading_vol_fig = trading_vol_fig.properties(
         title=f"{asset} ETF trading volume",
         **chart_size,
