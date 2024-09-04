@@ -142,10 +142,12 @@ def gen_data(asset):
 
     cum_flow_individual = etf_flow_individual.drop(columns="Date").cumsum()
     cum_flow_individual["Date"] = etf_flow_individual.Date
-    cum_flow_total = pd.DataFrame({
-        "Date": etf_flow_total.Date,
-        "Total": etf_flow_total.Total.cumsum(),
-    })
+    cum_flow_total = pd.DataFrame(
+        {
+            "Date": etf_flow_total.Date,
+            "Total": etf_flow_total.Total.cumsum(),
+        }
+    )
 
     return SimpleNamespace(
         etf_volumes=etf_volumes,
@@ -193,9 +195,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
     )
     # Combine trading volume and average trading volume
     trading_vol_fig += trading_vol_avg_fig
-    trading_vol_fig = trading_vol_fig.resolve_scale(
-        y="independent",
-    ).properties(
+    trading_vol_fig = trading_vol_fig.properties(
         title=f"{asset} ETF trading volume",
         **chart_size,
     )
@@ -224,9 +224,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         )
     )
     net_flow_individual_fig += net_flow_total_line_fig
-    net_flow_individual_fig = net_flow_individual_fig.resolve_scale(
-        y="independent",
-    ).properties(
+    net_flow_individual_fig = net_flow_individual_fig.properties(
         title=f"{asset} ETF net flow of individual funds",
         **chart_size,
     )
