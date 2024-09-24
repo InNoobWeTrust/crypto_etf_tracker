@@ -110,7 +110,7 @@ def fetch_asset_price(ticker: str, start_time=None):
 
     return price
 
-@st.cache_data
+@st.cache_data(ttl='30m')
 def fetch(asset):
     if asset == "BTC":
         df = fetch_btc_etf()
