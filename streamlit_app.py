@@ -196,7 +196,7 @@ if __name__ == "__main__":
     dashboard_tab, single_view, flow_tab, volume_tab, price_tab = st.tabs([
         'Dashboard',
         'View Single ETF',
-        'Explore ETH Flow',
+        'Explore ETF Flow',
         'Explore ETF Volume',
         'Explore ETF Asset Price',
     ])
