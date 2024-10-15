@@ -25,7 +25,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         .transform_fold(
             etf_volumes.drop(columns="Date").columns.to_list(), as_=["Funds", "Volume"]
         )
-        .mark_bar()
+        .mark_line()
         .encode(
             x=alt.X("Date:T", axis=alt.Axis(tickCount="day")),
             y=alt.Y("Volume:Q"),
@@ -37,15 +37,16 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         .transform_fold(
             etf_volumes.drop(columns="Date").columns.to_list(), as_=["Funds", "Volume"]
         )
-        .mark_line()
+        .mark_bar()
         .encode(
             x=alt.X("Date:T", axis=alt.Axis(tickCount="day")),
             y=alt.Y("sum(Volume):Q", title="Total Volume"),
-            color=alt.value("crimson"),
+            color=alt.value("gray"),
+            opacity=alt.value(0.5),
         )
     )
     # Combine trading volume and average trading volume
-    trading_vol_fig += trading_vol_total_fig
+    trading_vol_fig = trading_vol_total_fig + trading_vol_fig
     trading_vol_fig = trading_vol_fig.properties(
         title=f"{asset} ETF trading volume",
         **chart_size,
@@ -58,26 +59,35 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
             etf_flow_individual.drop(columns="Date").columns.to_list(),
             as_=["Funds", "Net Flow"],
         )
-        .mark_bar()
+        .mark_line()
         .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount="day")),
+            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title='', labels=False)),
             y=alt.Y("Net Flow:Q"),
             color="Funds:N",
         )
+    ).properties(
+        width=chart_size['width'],
+        height=chart_size['height'] / 2,
     )
-    net_flow_total_line_fig = (
+    net_flow_total_fig = (
         alt.Chart(etf_flow_total)
-        .mark_line()
+        .mark_bar()
         .encode(
             x=alt.X("Date:T", axis=alt.Axis(tickCount="day")),
             y=alt.Y("Total:Q"),
-            color=alt.value("crimson"),
+            color=alt.condition(
+                alt.datum.Total > 0,
+                alt.value("seagreen"),  # The positive color
+                alt.value("orangered"),  # The negative color
+            ),
         )
+    ).properties(
+        width=chart_size['width'],
+        height=chart_size['height'] / 2,
     )
-    net_flow_individual_fig += net_flow_total_line_fig
-    net_flow_individual_fig = net_flow_individual_fig.properties(
+    net_flow_individual_fig = net_flow_individual_fig & net_flow_total_fig 
+    net_flow_individual_fig = net_flow_individual_fig.resolve_scale(x='shared').properties(
         title=f"{asset} ETF net flow of individual funds",
-        **chart_size,
     )
 
     net_flow_total_fig = (
@@ -92,24 +102,27 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
                 alt.value("orangered"),  # The negative color
             ),
         )
+    ).properties(
+        width=chart_size['width'],
+        height=chart_size['height'] / 2,
     )
     # Line chart of price
     price_fig = (
         alt.Chart(price)
         .mark_line()
         .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount="day")),
-            y=alt.Y("Price:Q"),
+            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title='', labels=False)),
+            y=alt.Y("Price:Q").scale(zero=False),
             color=alt.value("crimson"),
         )
+    ).properties(
+        width=chart_size['width'],
+        height=chart_size['height'] / 2,
     )
 
-    net_flow_total_fig += price_fig
-    net_flow_total_fig = net_flow_total_fig.resolve_scale(
-        y="independent",
-    ).properties(
+    net_flow_total_fig = price_fig & net_flow_total_fig
+    net_flow_total_fig = net_flow_total_fig.resolve_scale(x='shared').properties(
         title=f"{asset} ETF net flow total vs asset price",
-        **chart_size,
     )
 
     # Stacking area chart of flow from individual funds
@@ -125,13 +138,13 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
             y=alt.Y("Net Flow:Q"),
             color=alt.Color("Funds:N", scale=alt.Scale(scheme="tableau20")),
         )
-    )
-    cum_flow_individual_net_fig += price_fig
-    cum_flow_individual_net_fig = cum_flow_individual_net_fig.resolve_scale(
-        y="independent",
     ).properties(
+        width=chart_size['width'],
+        height=chart_size['height'] / 2,
+    )
+    cum_flow_individual_net_fig = price_fig & cum_flow_individual_net_fig
+    cum_flow_individual_net_fig = cum_flow_individual_net_fig.resolve_scale(x='shared').properties(
         title=f"{asset} ETF cumulative flow of individual funds vs asset price",
-        **chart_size,
     )
 
     # Area chart for cumulative flow
@@ -148,13 +161,13 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
                 "negative:N", title="Negative Flow", scale=alt.Scale(scheme="set2")
             ),
         )
-    )
-    cum_flow_total_fig += price_fig
-    cum_flow_total_fig = cum_flow_total_fig.resolve_scale(
-        y="independent",
     ).properties(
+        width=chart_size['width'],
+        height=chart_size['height'] / 2,
+    )
+    cum_flow_total_fig = price_fig & cum_flow_total_fig
+    cum_flow_total_fig = cum_flow_total_fig.resolve_scale(x='shared').properties(
         title=f"{asset} ETF cumulative flow total vs asset price",
-        **chart_size,
     )
 
     return SimpleNamespace(
@@ -213,8 +226,12 @@ if __name__ == "__main__":
             'Asset to view',
             ('BTC', 'ETH'),
         )
-        chart = asset_charts(asset)
-        st.altair_chart(chart, use_container_width = True)
+        charts = gen_charts(asset, chart_size={"width": 'container', "height": 600})
+        st.altair_chart(charts.trading_vol_fig, use_container_width = True)
+        st.altair_chart(charts.net_flow_individual_fig, use_container_width = True)
+        st.altair_chart(charts.net_flow_total_fig, use_container_width = True)
+        st.altair_chart(charts.cum_flow_individual_net_fig, use_container_width = True)
+        st.altair_chart(charts.cum_flow_total_fig, use_container_width = True)
     with flow_tab:
         btc_flow, eth_flow = btc.etf_flow, eth.etf_flow
         btc_flow['Asset'] = 'BTC'
