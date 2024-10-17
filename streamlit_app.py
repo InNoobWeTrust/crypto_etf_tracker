@@ -31,25 +31,29 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
             y=alt.Y("Volume:Q"),
             color="Funds:N",
         )
+    ).properties(
+        width=chart_size['width'],
+        height=chart_size['height'] / 2,
     )
     trading_vol_total_fig = (
         alt.Chart(etf_volumes)
         .transform_fold(
             etf_volumes.drop(columns="Date").columns.to_list(), as_=["Funds", "Volume"]
         )
-        .mark_bar()
+        .mark_rule()
         .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount="day")),
+            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title='', labels=False)),
             y=alt.Y("sum(Volume):Q", title="Total Volume"),
-            color=alt.value("gray"),
-            opacity=alt.value(0.5),
+            color=alt.value("teal"),
         )
+    ).properties(
+        width=chart_size['width'],
+        height=chart_size['height'] / 2,
     )
     # Combine trading volume and average trading volume
-    trading_vol_fig = trading_vol_total_fig + trading_vol_fig
+    trading_vol_fig = trading_vol_total_fig & trading_vol_fig
     trading_vol_fig = trading_vol_fig.properties(
         title=f"{asset} ETF trading volume",
-        **chart_size,
     )
 
     # Net flow individual
@@ -61,7 +65,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         )
         .mark_line()
         .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title='', labels=False)),
+            x=alt.X("Date:T", axis=alt.Axis(tickCount="day")),
             y=alt.Y("Net Flow:Q"),
             color="Funds:N",
         )
@@ -71,9 +75,9 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
     )
     net_flow_total_fig = (
         alt.Chart(etf_flow_total)
-        .mark_bar()
+        .mark_rule()
         .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount="day")),
+            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title='', labels=False)),
             y=alt.Y("Total:Q"),
             color=alt.condition(
                 alt.datum.Total > 0,
@@ -85,16 +89,16 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         width=chart_size['width'],
         height=chart_size['height'] / 2,
     )
-    net_flow_individual_fig = net_flow_individual_fig & net_flow_total_fig 
+    net_flow_individual_fig = net_flow_total_fig & net_flow_individual_fig
     net_flow_individual_fig = net_flow_individual_fig.resolve_scale(x='shared').properties(
         title=f"{asset} ETF net flow of individual funds",
     )
 
     net_flow_total_fig = (
         alt.Chart(etf_flow_total)
-        .mark_bar()
+        .mark_rule()
         .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount="day")),
+            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title='', labels=False)),
             y=alt.Y("Total:Q"),
             color=alt.condition(
                 alt.datum.Total > 0,
@@ -111,7 +115,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         alt.Chart(price)
         .mark_line()
         .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title='', labels=False)),
+            x=alt.X("Date:T", axis=alt.Axis(tickCount="day")),
             y=alt.Y("Price:Q").scale(zero=False),
             color=alt.value("crimson"),
         )
@@ -120,7 +124,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         height=chart_size['height'] / 2,
     )
 
-    net_flow_total_fig = price_fig & net_flow_total_fig
+    net_flow_total_fig = net_flow_total_fig & price_fig
     net_flow_total_fig = net_flow_total_fig.resolve_scale(x='shared').properties(
         title=f"{asset} ETF net flow total vs asset price",
     )
@@ -134,7 +138,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         )
         .mark_area()
         .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount="day")),
+            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title='', labels=False)),
             y=alt.Y("Net Flow:Q"),
             color=alt.Color("Funds:N", scale=alt.Scale(scheme="tableau20")),
         )
@@ -142,7 +146,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         width=chart_size['width'],
         height=chart_size['height'] / 2,
     )
-    cum_flow_individual_net_fig = price_fig & cum_flow_individual_net_fig
+    cum_flow_individual_net_fig = cum_flow_individual_net_fig & price_fig
     cum_flow_individual_net_fig = cum_flow_individual_net_fig.resolve_scale(x='shared').properties(
         title=f"{asset} ETF cumulative flow of individual funds vs asset price",
     )
@@ -155,7 +159,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         )
         .mark_area()
         .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount="day")),
+            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title='', labels=False)),
             y=alt.Y("Total:Q", impute={"value": 0}),
             color=alt.Color(
                 "negative:N", title="Negative Flow", scale=alt.Scale(scheme="set2")
@@ -165,7 +169,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         width=chart_size['width'],
         height=chart_size['height'] / 2,
     )
-    cum_flow_total_fig = price_fig & cum_flow_total_fig
+    cum_flow_total_fig = cum_flow_total_fig & price_fig
     cum_flow_total_fig = cum_flow_total_fig.resolve_scale(x='shared').properties(
         title=f"{asset} ETF cumulative flow total vs asset price",
     )
