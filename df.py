@@ -1,4 +1,5 @@
 import pandas as pd
+import pytz
 import yfinance as yf
 import streamlit as st
 
@@ -118,8 +119,10 @@ def fetch(asset):
         df = fetch_eth_etf()
 
     etf_flow, etf_funds = df.flow, df.funds
-    etf_volumes = fetch_etf_volumes(etf_funds, start_time = etf_flow.Date[0])
-    price = fetch_asset_price(f'{asset}-USD', start_time = etf_flow.Date[0])
+    tz = pytz.timezone('America/New_York')
+    start_time = tz.localize(etf_flow.Date[0])
+    etf_volumes = fetch_etf_volumes(etf_funds, start_time = start_time)
+    price = fetch_asset_price(f'{asset}-USD', start_time = start_time)
     price.rename(columns={'Close': 'Price'}, inplace=True)
 
     etf_flow_individual = etf_flow.drop(columns="Total")
