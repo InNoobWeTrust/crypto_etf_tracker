@@ -2,17 +2,23 @@ import pandas as pd
 
 import streamlit as st
 import altair as alt
-alt.renderers.set_embed_options(theme="dark")
+
 from pygwalker.api.streamlit import StreamlitRenderer, init_streamlit_comm
 
 from types import SimpleNamespace
 
 from df import fetch
 
+alt.renderers.set_embed_options(theme="dark")
+
+
+@st.cache_data(ttl="30m")
+def fetch_asset(asset):
+    return fetch(asset)
 
 def gen_charts(asset, chart_size={"width": 560, "height": 300}):
     # Gen data
-    data = fetch(asset)
+    data = fetch_asset(asset)
     etf_volumes = data.etf_volumes
     price = data.price
     etf_flow_individual = data.etf_flow_individual
@@ -32,8 +38,8 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
             color="Funds:N",
         )
     ).properties(
-        width=chart_size['width'],
-        height=chart_size['height'] / 2,
+        width=chart_size["width"],
+        height=chart_size["height"] / 2,
     )
     trading_vol_total_fig = (
         alt.Chart(etf_volumes)
@@ -42,13 +48,13 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         )
         .mark_rule()
         .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title='', labels=False)),
+            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title="", labels=False)),
             y=alt.Y("sum(Volume):Q", title="Total Volume"),
             color=alt.value("teal"),
         )
     ).properties(
-        width=chart_size['width'],
-        height=chart_size['height'] / 2,
+        width=chart_size["width"],
+        height=chart_size["height"] / 2,
     )
     # Combine trading volume and average trading volume
     trading_vol_fig = trading_vol_total_fig & trading_vol_fig
@@ -70,14 +76,14 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
             color="Funds:N",
         )
     ).properties(
-        width=chart_size['width'],
-        height=chart_size['height'] / 2,
+        width=chart_size["width"],
+        height=chart_size["height"] / 2,
     )
     net_flow_total_fig = (
         alt.Chart(etf_flow_total)
         .mark_rule()
         .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title='', labels=False)),
+            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title="", labels=False)),
             y=alt.Y("Total:Q"),
             color=alt.condition(
                 alt.datum.Total > 0,
@@ -86,11 +92,13 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
             ),
         )
     ).properties(
-        width=chart_size['width'],
-        height=chart_size['height'] / 2,
+        width=chart_size["width"],
+        height=chart_size["height"] / 2,
     )
     net_flow_individual_fig = net_flow_total_fig & net_flow_individual_fig
-    net_flow_individual_fig = net_flow_individual_fig.resolve_scale(x='shared').properties(
+    net_flow_individual_fig = net_flow_individual_fig.resolve_scale(
+        x="shared"
+    ).properties(
         title=f"{asset} ETF net flow of individual funds",
     )
 
@@ -98,7 +106,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         alt.Chart(etf_flow_total)
         .mark_rule()
         .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title='', labels=False)),
+            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title="", labels=False)),
             y=alt.Y("Total:Q"),
             color=alt.condition(
                 alt.datum.Total > 0,
@@ -107,8 +115,8 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
             ),
         )
     ).properties(
-        width=chart_size['width'],
-        height=chart_size['height'] / 2,
+        width=chart_size["width"],
+        height=chart_size["height"] / 2,
     )
     # Line chart of price
     price_fig = (
@@ -120,12 +128,12 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
             color=alt.value("crimson"),
         )
     ).properties(
-        width=chart_size['width'],
-        height=chart_size['height'] / 2,
+        width=chart_size["width"],
+        height=chart_size["height"] / 2,
     )
 
     net_flow_total_fig = net_flow_total_fig & price_fig
-    net_flow_total_fig = net_flow_total_fig.resolve_scale(x='shared').properties(
+    net_flow_total_fig = net_flow_total_fig.resolve_scale(x="shared").properties(
         title=f"{asset} ETF net flow total vs asset price",
     )
 
@@ -138,16 +146,18 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         )
         .mark_area()
         .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title='', labels=False)),
+            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title="", labels=False)),
             y=alt.Y("Net Flow:Q"),
             color=alt.Color("Funds:N", scale=alt.Scale(scheme="tableau20")),
         )
     ).properties(
-        width=chart_size['width'],
-        height=chart_size['height'] / 2,
+        width=chart_size["width"],
+        height=chart_size["height"] / 2,
     )
     cum_flow_individual_net_fig = cum_flow_individual_net_fig & price_fig
-    cum_flow_individual_net_fig = cum_flow_individual_net_fig.resolve_scale(x='shared').properties(
+    cum_flow_individual_net_fig = cum_flow_individual_net_fig.resolve_scale(
+        x="shared"
+    ).properties(
         title=f"{asset} ETF cumulative flow of individual funds vs asset price",
     )
 
@@ -159,18 +169,18 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         )
         .mark_area()
         .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title='', labels=False)),
+            x=alt.X("Date:T", axis=alt.Axis(tickCount="day", title="", labels=False)),
             y=alt.Y("Total:Q", impute={"value": 0}),
             color=alt.Color(
                 "negative:N", title="Negative Flow", scale=alt.Scale(scheme="set2")
             ),
         )
     ).properties(
-        width=chart_size['width'],
-        height=chart_size['height'] / 2,
+        width=chart_size["width"],
+        height=chart_size["height"] / 2,
     )
     cum_flow_total_fig = cum_flow_total_fig & price_fig
-    cum_flow_total_fig = cum_flow_total_fig.resolve_scale(x='shared').properties(
+    cum_flow_total_fig = cum_flow_total_fig.resolve_scale(x="shared").properties(
         title=f"{asset} ETF cumulative flow total vs asset price",
     )
 
@@ -182,7 +192,8 @@ def gen_charts(asset, chart_size={"width": 560, "height": 300}):
         cum_flow_total_fig=cum_flow_total_fig,
     )
 
-def asset_charts(asset: str, chart_size={"width": 'container', "height": 300}):
+
+def asset_charts(asset: str, chart_size={"width": "container", "height": 300}):
     charts = gen_charts(asset, chart_size)
     # Vertical concat the charts in each asset into single column of that asset
     all_charts = (
@@ -195,14 +206,14 @@ def asset_charts(asset: str, chart_size={"width": 'container', "height": 300}):
 
     return all_charts
 
+
 def compound_chart(chart_size={"width": 560, "height": 300}):
-    all_charts_btc = asset_charts('BTC', chart_size)
-    all_charts_eth = asset_charts('ETH', chart_size)
+    all_charts_btc = asset_charts("BTC", chart_size)
+    all_charts_eth = asset_charts("ETH", chart_size)
     # Horizontal concat the charts for btc and eth
     all_charts = (all_charts_btc | all_charts_eth).resolve_scale(color="independent")
 
     return all_charts
-
 
 if __name__ == "__main__":
     # Set page config
@@ -210,16 +221,18 @@ if __name__ == "__main__":
     # Initialize pygwalker communication
     init_streamlit_comm()
 
-    dashboard_tab, single_view, flow_tab, volume_tab, price_tab = st.tabs([
-        'Dashboard',
-        'View Single ETF',
-        'Explore ETF Flow',
-        'Explore ETF Volume',
-        'Explore ETF Asset Price',
-    ])
+    dashboard_tab, single_view, flow_tab, volume_tab, price_tab = st.tabs(
+        [
+            "Dashboard",
+            "View Single ETF",
+            "Explore ETF Flow",
+            "Explore ETF Volume",
+            "Explore ETF Asset Price",
+        ]
+    )
 
-    btc = fetch('BTC')
-    eth = fetch('ETH')
+    btc = fetch_asset("BTC")
+    eth = fetch_asset("ETH")
 
     with dashboard_tab:
         chart = compound_chart(chart_size={"width": 560, "height": 300})
@@ -227,33 +240,33 @@ if __name__ == "__main__":
         st.altair_chart(chart, use_container_width=True)
     with single_view:
         asset = st.selectbox(
-            'Asset to view',
-            ('BTC', 'ETH'),
+            "Asset to view",
+            ("BTC", "ETH"),
         )
-        charts = gen_charts(asset, chart_size={"width": 'container', "height": 600})
-        st.altair_chart(charts.trading_vol_fig, use_container_width = True)
-        st.altair_chart(charts.net_flow_individual_fig, use_container_width = True)
-        st.altair_chart(charts.net_flow_total_fig, use_container_width = True)
-        st.altair_chart(charts.cum_flow_individual_net_fig, use_container_width = True)
-        st.altair_chart(charts.cum_flow_total_fig, use_container_width = True)
+        charts = gen_charts(asset, chart_size={"width": "container", "height": 600})
+        st.altair_chart(charts.trading_vol_fig, use_container_width=True)
+        st.altair_chart(charts.net_flow_individual_fig, use_container_width=True)
+        st.altair_chart(charts.net_flow_total_fig, use_container_width=True)
+        st.altair_chart(charts.cum_flow_individual_net_fig, use_container_width=True)
+        st.altair_chart(charts.cum_flow_total_fig, use_container_width=True)
     with flow_tab:
         btc_flow, eth_flow = btc.etf_flow, eth.etf_flow
-        btc_flow['Asset'] = 'BTC'
-        eth_flow['Asset'] = 'ETH'
+        btc_flow["Asset"] = "BTC"
+        eth_flow["Asset"] = "ETH"
         df = pd.concat([btc_flow, eth_flow])
         df.Date = df.Date.astype(str)
         StreamlitRenderer(df).explorer()
     with volume_tab:
         btc_volume, eth_volume = btc.etf_volumes, eth.etf_volumes
-        btc_volume['Asset'] = 'BTC'
-        eth_volume['Asset'] = 'ETH'
+        btc_volume["Asset"] = "BTC"
+        eth_volume["Asset"] = "ETH"
         df = pd.concat([btc_volume, eth_volume])
         df.Date = df.Date.astype(str)
         StreamlitRenderer(df).explorer()
     with price_tab:
         btc_price, eth_price = btc.price, eth.price
-        btc_price['Asset'] = 'BTC'
-        eth_price['Asset'] = 'ETH'
+        btc_price["Asset"] = "BTC"
+        eth_price["Asset"] = "ETH"
         df = pd.concat([btc_price, eth_price])
         df.Date = df.Date.astype(str)
         StreamlitRenderer(df).explorer()

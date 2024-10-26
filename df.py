@@ -1,7 +1,6 @@
 import pandas as pd
 import pytz
 import yfinance as yf
-import streamlit as st
 
 from typing import List
 from types import SimpleNamespace
@@ -47,7 +46,9 @@ def extract_date_index(df):
 def fetch_btc_etf():
     # Get Bitcoin spot ETF history
     btc_etf_flow = pd.read_html(
-        "https://farside.co.uk/?p=1321", attrs={"class": "etf"}, skiprows=[1]
+        "https://farside.co.uk/bitcoin-etf-flow-all-data/",
+        attrs={"class": "etf"},
+        skiprows=[1],
     )[0]
     # Remove summary lines
     btc_etf_flow = btc_etf_flow.iloc[:-4]
@@ -57,10 +58,11 @@ def fetch_btc_etf():
     btc_etf_flow, btc_etf_flow_original = clean_etf_data(btc_etf_flow)
 
     return SimpleNamespace(
-        flow = btc_etf_flow,
-        orig = btc_etf_flow_original,
-        funds = btc_etf_funds,
+        flow=btc_etf_flow,
+        orig=btc_etf_flow_original,
+        funds=btc_etf_funds,
     )
+
 
 def fetch_eth_etf():
     # Get Ethereum spot ETF history
@@ -90,28 +92,34 @@ def fetch_eth_etf():
     eth_etf_flow, eth_etf_flow_original = clean_etf_data(eth_etf_flow)
 
     return SimpleNamespace(
-        flow = eth_etf_flow,
-        orig = eth_etf_flow_original,
-        funds = eth_etf_funds,
+        flow=eth_etf_flow,
+        orig=eth_etf_flow_original,
+        funds=eth_etf_funds,
     )
+
 
 def fetch_etf_volumes(funds: List[str], start_time=None):
     etf_volumes = pd.DataFrame()
     for fund in funds:
         etf_volumes[fund] = yf.download(
-            str(fund), interval = '1d', period = 'max', start = start_time,
-        ).Volume
+            str(fund),
+            interval="1d",
+            period="max",
+            start=start_time,
+        )["Volume"]
     etf_volumes = extract_date_index(etf_volumes)
 
     return etf_volumes
 
+
 def fetch_asset_price(ticker: str, start_time=None):
-    price = yf.download(ticker, interval = '1d', period = 'max', start = start_time).Close
+    price = yf.download(ticker, interval="1d", period="max", start=start_time)["Close"]
     price = extract_date_index(price)
+    price.rename(columns={"Close": "Price"}, inplace=True)
 
     return price
 
-@st.cache_data(ttl='30m')
+
 def fetch(asset):
     if asset == "BTC":
         df = fetch_btc_etf()
@@ -119,21 +127,25 @@ def fetch(asset):
         df = fetch_eth_etf()
 
     etf_flow, etf_funds = df.flow, df.funds
-    tz = pytz.timezone('America/New_York')
+    tz = pytz.timezone("America/New_York")
+
+    etf_flow, etf_funds = df.flow, df.funds
+    tz = pytz.timezone("America/New_York")
     start_time = tz.localize(etf_flow.Date[0])
-    etf_volumes = fetch_etf_volumes(etf_funds, start_time = start_time)
-    price = fetch_asset_price(f'{asset}-USD', start_time = start_time)
-    price.rename(columns={'Close': 'Price'}, inplace=True)
+    etf_volumes = fetch_etf_volumes(etf_funds, start_time=start_time)
+    price = fetch_asset_price(f"{asset}-USD", start_time=start_time)
 
     etf_flow_individual = etf_flow.drop(columns="Total")
     etf_flow_total = etf_flow[["Date", "Total"]]
 
     cum_flow_individual = etf_flow_individual.drop(columns="Date").cumsum()
     cum_flow_individual["Date"] = etf_flow_individual.Date
-    cum_flow_total = pd.DataFrame({
-        "Date": etf_flow_total.Date,
-        "Total": etf_flow_total.Total.cumsum(),
-    })
+    cum_flow_total = pd.DataFrame(
+        {
+            "Date": etf_flow_total.Date,
+            "Total": etf_flow_total.Total.cumsum(),
+        }
+    )
 
     return SimpleNamespace(
         etf_flow=etf_flow,

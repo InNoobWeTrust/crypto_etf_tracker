@@ -1,6 +1,6 @@
 streamlit
 pandas
-yfinance
+yfinance[nospam,repair]==0.2.47
 altair
 vega
 workalendar
