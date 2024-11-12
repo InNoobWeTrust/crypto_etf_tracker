@@ -3,6 +3,8 @@ import pytz
 import requests
 import yfinance as yf
 
+from datetime import datetime
+
 from typing import List
 from types import SimpleNamespace
 
@@ -63,6 +65,17 @@ def fetch_btc_etf():
         url,
         headers=FETCH_HEADER,
     )
+    print(r.status_code)
+    if r.status_code != 200:
+        print(r.content)
+        btc_etf_flow=pd.DataFrame.from_dict({"Date":["11 Jan 2024", "12 Jan 2024"], "Total": [0,0]})
+        btc_etf_flow, btc_etf_flow_original = clean_etf_data(btc_etf_flow)
+        return SimpleNamespace(
+            url=url,
+            flow=btc_etf_flow,
+            orig=btc_etf_flow_original,
+            funds=[],
+        )
     # Get Bitcoin spot ETF history
     btc_etf_flow = pd.read_html(
         r.content,
@@ -90,6 +103,17 @@ def fetch_eth_etf():
         url,
         headers=FETCH_HEADER,
     )
+    print(r.status_code)
+    if r.status_code != 200:
+        print(r.content)
+        eth_etf_flow=pd.DataFrame.from_dict({"Date":["11 Jan 2024", "12 Jan 2024"], "Total": [0,0]})
+        eth_etf_flow, eth_etf_flow_original = clean_etf_data(eth_etf_flow)
+        return SimpleNamespace(
+            url=url,
+            flow=eth_etf_flow,
+            orig=eth_etf_flow_original,
+            funds=[],
+        )
     # Get Ethereum spot ETF history
     eth_etf_flow = pd.read_html(
         r.content,
