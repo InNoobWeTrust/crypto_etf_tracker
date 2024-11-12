@@ -1,6 +1,7 @@
 import pandas as pd
 
 import streamlit as st
+from streamlit.components.v1 import iframe
 import altair as alt
 
 from pygwalker.api.streamlit import StreamlitRenderer, init_streamlit_comm
@@ -238,6 +239,11 @@ if __name__ == "__main__":
         chart = compound_chart(chart_size={"width": 560, "height": 300})
         # Display charts
         st.altair_chart(chart, use_container_width=True)
+        btc_col, eth_col = st.columns(2)
+        with btc_col:
+            iframe(btc.url, height=1200, scrolling=True)
+        with eth_col:
+            iframe(eth.url, height=1200, scrolling=True)
     with single_view:
         asset = st.selectbox(
             "Asset to view",
@@ -249,6 +255,7 @@ if __name__ == "__main__":
         st.altair_chart(charts.net_flow_total_fig, use_container_width=True)
         st.altair_chart(charts.cum_flow_individual_net_fig, use_container_width=True)
         st.altair_chart(charts.cum_flow_total_fig, use_container_width=True)
+        iframe(fetch_asset(asset).url, height=1200, scrolling=True)
     with flow_tab:
         btc_flow, eth_flow = btc.etf_flow, eth.etf_flow
         btc_flow["Asset"] = "BTC"

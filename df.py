@@ -58,8 +58,9 @@ FETCH_HEADER = {
     }
 
 def fetch_btc_etf():
+    url = "https://farside.co.uk/bitcoin-etf-flow-all-data/"
     r = requests.Session().get(
-        "https://farside.co.uk/bitcoin-etf-flow-all-data/",
+        url,
         headers=FETCH_HEADER,
     )
     # Get Bitcoin spot ETF history
@@ -76,6 +77,7 @@ def fetch_btc_etf():
     btc_etf_flow, btc_etf_flow_original = clean_etf_data(btc_etf_flow)
 
     return SimpleNamespace(
+        url=url,
         flow=btc_etf_flow,
         orig=btc_etf_flow_original,
         funds=btc_etf_funds,
@@ -83,8 +85,9 @@ def fetch_btc_etf():
 
 
 def fetch_eth_etf():
+    url = "https://farside.co.uk/ethereum-etf-flow-all-data/"
     r = requests.Session().get(
-        "https://farside.co.uk/ethereum-etf-flow-all-data/",
+        url,
         headers=FETCH_HEADER,
     )
     # Get Ethereum spot ETF history
@@ -114,6 +117,7 @@ def fetch_eth_etf():
     eth_etf_flow, eth_etf_flow_original = clean_etf_data(eth_etf_flow)
 
     return SimpleNamespace(
+        url=url,
         flow=eth_etf_flow,
         orig=eth_etf_flow_original,
         funds=eth_etf_funds,
@@ -148,7 +152,7 @@ def fetch(asset):
     else:
         df = fetch_eth_etf()
 
-    etf_flow, etf_funds = df.flow, df.funds
+    etf_flow, etf_funds, etf_url = df.flow, df.funds, df.url
     tz = pytz.timezone("America/New_York")
 
     etf_flow, etf_funds = df.flow, df.funds
@@ -170,6 +174,7 @@ def fetch(asset):
     )
 
     return SimpleNamespace(
+        url=etf_url,
         etf_flow=etf_flow,
         etf_volumes=etf_volumes,
         price=price,
