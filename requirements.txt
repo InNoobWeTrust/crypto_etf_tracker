@@ -5,3 +5,4 @@ altair
 vega
 workalendar
 pygwalker
+cloudscraper

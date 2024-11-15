@@ -1,9 +1,7 @@
 import pandas as pd
 import pytz
-import requests
+import cloudscraper
 import yfinance as yf
-
-from datetime import datetime
 
 from typing import List
 from types import SimpleNamespace
@@ -59,12 +57,13 @@ FETCH_HEADER = {
         "Cache-Control": "max-age=0",
     }
 
+def scrape(url: str):
+    scraper = cloudscraper.create_scraper()
+    return scraper.get(url)
+
 def fetch_btc_etf():
     url = "https://farside.co.uk/bitcoin-etf-flow-all-data/"
-    r = requests.Session().get(
-        url,
-        headers=FETCH_HEADER,
-    )
+    r = scrape(url)
     print(r.status_code)
     if r.status_code != 200:
         print(r.content)
@@ -99,10 +98,7 @@ def fetch_btc_etf():
 
 def fetch_eth_etf():
     url = "https://farside.co.uk/ethereum-etf-flow-all-data/"
-    r = requests.Session().get(
-        url,
-        headers=FETCH_HEADER,
-    )
+    r = scrape(url)
     print(r.status_code)
     if r.status_code != 200:
         print(r.content)
