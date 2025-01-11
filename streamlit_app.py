@@ -27,8 +27,9 @@ def gen_charts(asset, chart_size={"width": 560, "height": 150}):
     cum_flow_individual = data.cum_flow_individual
     cum_flow_total = data.cum_flow_total
 
-    # Selection interval
-    interval = alt.selection_interval(encodings=["x"])
+    # Create bindings for interval selection
+    scale_selection = alt.selection_interval(encodings=["x"],bind="scales")
+
     # Line chart of price
     price = (
         alt.Chart(price)
@@ -38,12 +39,10 @@ def gen_charts(asset, chart_size={"width": 560, "height": 150}):
             y=alt.Y("Price:Q").scale(zero=False),
             color=alt.value("crimson"),
         )
-    ).properties(
+    ).add_params(scale_selection).properties(
         width=chart_size["width"],
         height=chart_size["height"],
     )
-    # View selection
-    view = price.add_params(interval)
 
     trading_vol_individual = (
         alt.Chart(etf_volumes)
@@ -56,7 +55,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 150}):
             y=alt.Y("Volume:Q", title="Trading Volume Individual"),
             color="Funds:N",
         )
-    ).properties(
+    ).add_params(scale_selection).properties(
         width=chart_size["width"],
         height=chart_size["height"],
     )
@@ -71,7 +70,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 150}):
             y=alt.Y("sum(Volume):Q", title="Trading Volume Total"),
             color=alt.value("teal"),
         )
-    ).properties(
+    ).add_params(scale_selection).properties(
         width=chart_size["width"],
         height=chart_size["height"],
     )
@@ -89,7 +88,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 150}):
             y=alt.Y("Net Flow:Q", title="Net Flow Individual"),
             color="Funds:N",
         )
-    ).properties(
+    ).add_params(scale_selection).properties(
         width=chart_size["width"],
         height=chart_size["height"],
     )
@@ -105,7 +104,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 150}):
                 alt.value("orangered"),  # The negative color
             ),
         )
-    ).properties(
+    ).add_params(scale_selection).properties(
         width=chart_size["width"],
         height=chart_size["height"],
     )
@@ -123,7 +122,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 150}):
             y=alt.Y("Net Flow:Q", title="Cumulative Flow Individual"),
             color=alt.Color("Funds:N", scale=alt.Scale(scheme="tableau20")),
         )
-    ).properties(
+    ).add_params(scale_selection).properties(
         width=chart_size["width"],
         height=chart_size["height"],
     )
@@ -142,14 +141,12 @@ def gen_charts(asset, chart_size={"width": 560, "height": 150}):
                 "negative:N", title="Negative Flow", scale=alt.Scale(scheme="set2")
             ),
         )
-    ).properties(
+    ).add_params(scale_selection).properties(
         width=chart_size["width"],
         height=chart_size["height"],
     )
 
     return SimpleNamespace(
-        interval=interval,
-        view=view,
         price=price,
         trading_vol_individual=trading_vol_individual,
         trading_vol_total=trading_vol_total,
@@ -161,15 +158,16 @@ def gen_charts(asset, chart_size={"width": 560, "height": 150}):
 
 def asset_charts(asset: str, chart_size={"width": "container", "height": 150}):
     charts = gen_charts(asset, chart_size)
+
     # Vertical concat the charts in each asset into single column of that asset
     all_charts = (
-        charts.view
-        & charts.trading_vol_individual.encode(x=alt.X("Date:T", axis=alt.Axis(tickCount="day"), title="",scale=alt.Scale(domain=charts.interval)))
-        & charts.trading_vol_total.encode(x=alt.X("Date:T", axis=alt.Axis(tickCount="day"), title="",scale=alt.Scale(domain=charts.interval)))
-        & charts.net_flow_individual.encode(x=alt.X("Date:T", axis=alt.Axis(tickCount="day"), title="",scale=alt.Scale(domain=charts.interval)))
-        & charts.net_flow_total.encode(x=alt.X("Date:T", axis=alt.Axis(tickCount="day"), title="",scale=alt.Scale(domain=charts.interval)))
-        & charts.cum_flow_individual.encode(x=alt.X("Date:T", axis=alt.Axis(tickCount="day"), title="",scale=alt.Scale(domain=charts.interval)))
-        & charts.cum_flow_total.encode(x=alt.X("Date:T", axis=alt.Axis(tickCount="day"), title="",scale=alt.Scale(domain=charts.interval)))
+        charts.price
+        & charts.trading_vol_individual
+        & charts.trading_vol_total
+        & charts.net_flow_individual
+        & charts.net_flow_total
+        & charts.cum_flow_individual
+        & charts.cum_flow_total
     ).resolve_scale(
         color="independent",
     ).properties(
