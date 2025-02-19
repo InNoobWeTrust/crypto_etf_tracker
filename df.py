@@ -43,23 +43,26 @@ def extract_date_index(df):
 
     return df
 
+
 FETCH_HEADER = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:98.0) Gecko/20100101 Firefox/98.0",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Cache-Control": "max-age=0",
-    }
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:98.0) Gecko/20100101 Firefox/98.0",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Accept-Encoding": "gzip, deflate",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Cache-Control": "max-age=0",
+}
+
 
 def scrape(url: str):
     scraper = cloudscraper.create_scraper()
     return scraper.get(url)
+
 
 def fetch_btc_etf():
     url = "https://farside.co.uk/bitcoin-etf-flow-all-data/"
@@ -67,7 +70,9 @@ def fetch_btc_etf():
     print(r.status_code)
     if r.status_code != 200:
         print(r.content)
-        btc_etf_flow=pd.DataFrame.from_dict({"Date":["11 Jan 2024", "12 Jan 2024"], "Total": [0,0]})
+        btc_etf_flow = pd.DataFrame.from_dict(
+            {"Date": ["11 Jan 2024", "12 Jan 2024"], "Total": [0, 0]}
+        )
         btc_etf_flow, btc_etf_flow_original = clean_etf_data(btc_etf_flow)
         return SimpleNamespace(
             url=url,
@@ -102,7 +107,9 @@ def fetch_eth_etf():
     print(r.status_code)
     if r.status_code != 200:
         print(r.content)
-        eth_etf_flow=pd.DataFrame.from_dict({"Date":["11 Jan 2024", "12 Jan 2024"], "Total": [0,0]})
+        eth_etf_flow = pd.DataFrame.from_dict(
+            {"Date": ["11 Jan 2024", "12 Jan 2024"], "Total": [0, 0]}
+        )
         eth_etf_flow, eth_etf_flow_original = clean_etf_data(eth_etf_flow)
         return SimpleNamespace(
             url=url,
@@ -161,7 +168,8 @@ def fetch_etf_volumes(funds: List[str], start_time=None):
 def fetch_asset_price(ticker: str, start_time=None):
     price = yf.download(ticker, interval="1d", period="max", start=start_time)["Close"]
     price = extract_date_index(price)
-    price.rename(columns={"Close": "Price"}, inplace=True)
+    price.rename(columns={ticker: "Price"}, inplace=True)
+    print(price.head())
 
     return price
 

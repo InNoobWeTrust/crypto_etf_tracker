@@ -1,0 +1,30 @@
+[tasks.rust]
+script_runner = "@rust"
+script = '''
+//! ```cargo
+//! [dependencies]
+//! yahoo_finance_api = "*"
+//! tokio = { version = "*", features = ["rt-multi-thread", "macros"] }
+//! tokio-test = "*"
+//! time = "*"
+//! ```
+use yahoo_finance_api as yahoo;
+use std::time::{Duration, UNIX_EPOCH};
+use tokio_test;
+
+fn main() {
+    let provider = yahoo::YahooConnector::new().unwrap();
+    let response = tokio_test::block_on(provider.get_quote_range("BTC-USD", "1d", "2y")).unwrap();
+    let quotes = response.quotes().unwrap();
+    println!("BTC's quotes: {:?}", quotes);
+    let response = tokio_test::block_on(provider.get_quote_range("ETH-USD", "1d", "2y")).unwrap();
+    let quotes = response.quotes().unwrap();
+    println!("ETH's quotes: {:?}", quotes);
+}
+'''
+
+[tasks.coinpaprika]
+script = '''
+curl "https://api.coinpaprika.com/v1/tickers/btc-bitcoin/historical?start=$(date -I -v-1y -v+2d)&interval=1d" | jq '.[].price' | uplot line
+curl "https://api.coinpaprika.com/v1/tickers/eth-the-ticker-is-eth/historical?start=$(date -I -v-1y -v+2d)&interval=1d" | jq '.[].price' | uplot line
+'''
