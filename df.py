@@ -18,7 +18,9 @@ def clean_etf_data(df):
 
     # Format outflow to negative value
     df = df.drop(columns="Date")
-    df.replace(to_replace=r"\(([0-9.]+)\)", value=r"-\1", regex=True, inplace=True)
+    df.replace(to_replace=r"\(([0-9.,]+)\)", value=r"-\1", regex=True, inplace=True)
+    # Remove thousands separator
+    df.replace(to_replace=r",", value=r"", regex=True, inplace=True)
 
     # Replace '-' with 0
     df.replace("-", 0, inplace=True)
