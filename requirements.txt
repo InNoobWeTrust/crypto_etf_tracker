@@ -1,9 +1,0 @@
-streamlit
-pandas
-lxml
-yfinance[nospam,repair]==0.2.54
-altair
-vega
-workalendar
-pygwalker
-cloudscraper

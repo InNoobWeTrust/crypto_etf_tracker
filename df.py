@@ -2,6 +2,7 @@ import pandas as pd
 import pytz
 import cloudscraper
 import yfinance as yf
+from rich import print
 
 from typing import List
 from types import SimpleNamespace
@@ -168,9 +169,21 @@ def fetch_etf_volumes(funds: List[str], start_time=None):
 
 
 def fetch_asset_price(ticker: str, start_time=None):
-    price = yf.download(ticker, interval="1d", period="max", start=start_time)["Close"]
-    price = extract_date_index(price)
-    price.rename(columns={ticker: "Price"}, inplace=True)
+    price = yf.download(ticker, interval="1d", period="max", start=start_time)
+    price = price.droplevel("Ticker", axis=1)
+    price.columns = [c[0] if isinstance(c, list) else c for c in price.columns]
+    price.rename(
+        columns={
+            "Price_Date": "Date",
+            "Open": "open",
+            "High": "high",
+            "Low": "low",
+            "Close": "close",
+            "Volume": "volume",
+        },
+        inplace=True,
+    )
+    price.reset_index(names="Date", inplace=True)
     print(price.head())
 
     return price
@@ -203,8 +216,39 @@ def fetch(asset):
         }
     )
 
+    tdv = f"""
+<!-- TradingView Widget BEGIN -->
+<div class="tradingview-widget-container">
+  <div class="tradingview-widget-container__widget"></div>
+  <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
+  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+  {{
+    "width": "100%",
+    "height": "640",
+    "symbol": "INDEX:{asset}USD",
+    "interval": "D",
+    "timezone": "Etc/UTC",
+    "theme": "dark",
+    "style": "1",
+    "locale": "en",
+    "withdateranges": true,
+    "hide_side_toolbar": false,
+    "allow_symbol_change": true,
+    "details": false,
+    "calendar": false,
+    "studies": [
+      "STD;RSI"
+    ],
+    "support_host": "https://www.tradingview.com"
+  }}
+  </script>
+</div>
+<!-- TradingView Widget END -->
+            """
+
     return SimpleNamespace(
         url=etf_url,
+        tdv=tdv,
         etf_flow=etf_flow,
         etf_volumes=etf_volumes,
         price=price,

@@ -3,7 +3,7 @@
 import pandas as pd
 
 import streamlit as st
-from streamlit.components.v1 import iframe
+from streamlit.components.v1 import iframe, html
 import altair as alt
 
 from pygwalker.api.streamlit import StreamlitRenderer, init_streamlit_comm
@@ -44,7 +44,7 @@ def gen_charts(asset, chart_size={"width": 560, "height": 150}):
                     axis=alt.Axis(tickCount={"interval": "month", "step": 1}),
                     title="",
                 ),
-                y=alt.Y("Price:Q").scale(zero=False),
+                y=alt.Y("close:Q").scale(zero=False),
                 color=alt.value("crimson"),
             )
         )
@@ -275,11 +275,14 @@ def app():
             st.altair_chart(btc_charts, use_container_width=True)
         with eth_chart_col:
             st.altair_chart(eth_charts, use_container_width=True)
+
         # Display iframes
         btc_col, eth_col = st.columns(2)
         with btc_col:
+            html(btc.tdv, height=640)
             iframe(btc.url, height=1200, scrolling=True)
         with eth_col:
+            html(eth.tdv, height=640)
             iframe(eth.url, height=1200, scrolling=True)
     with single_view:
         asset = st.selectbox(
@@ -288,27 +291,29 @@ def app():
         )
         charts = asset_charts(asset, chart_size={"width": "container", "height": 300})
         st.altair_chart(charts, use_container_width=True)
+        match asset:
+            case "BTC":
+                html(btc.tdv, height=640)
+            case "ETH":
+                html(eth.tdv, height=640)
         iframe(fetch_asset(asset).url, height=1200, scrolling=True)
     with flow_tab:
         btc_flow, eth_flow = btc.etf_flow, eth.etf_flow
         btc_flow["Asset"] = "BTC"
         eth_flow["Asset"] = "ETH"
         df = pd.concat([btc_flow, eth_flow])
-        df.Date = df.Date.astype(str)
         StreamlitRenderer(df).explorer()
     with volume_tab:
         btc_volume, eth_volume = btc.etf_volumes, eth.etf_volumes
         btc_volume["Asset"] = "BTC"
         eth_volume["Asset"] = "ETH"
         df = pd.concat([btc_volume, eth_volume])
-        df.Date = df.Date.astype(str)
         StreamlitRenderer(df).explorer()
     with price_tab:
         btc_price, eth_price = btc.price, eth.price
         btc_price["Asset"] = "BTC"
         eth_price["Asset"] = "ETH"
         df = pd.concat([btc_price, eth_price])
-        df.Date = df.Date.astype(str)
         StreamlitRenderer(df).explorer()
 
 
