@@ -1,0 +1,17 @@
+[project]
+name = "crypto-etf-tracker"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "altair>=5.5.0",
+    "cloudscraper>=1.2.71",
+    "lxml>=5.3.1",
+    "pandas>=2.2.3",
+    "pygwalker>=0.4.9.14",
+    "streamlit>=1.43.2",
+    "vega>=4.1.0",
+    "workalendar>=17.0.0",
+    "yfinance[nospam,repair]==0.2.54",
+]

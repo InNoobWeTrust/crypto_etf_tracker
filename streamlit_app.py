@@ -1,3 +1,5 @@
+#!/usr/bin/env -S pkgx +python@3.7 uv run -- streamlit run
+
 import pandas as pd
 
 import streamlit as st
@@ -17,6 +19,7 @@ alt.renderers.set_embed_options(theme="dark")
 def fetch_asset(asset):
     return fetch(asset)
 
+
 def gen_charts(asset, chart_size={"width": 560, "height": 150}):
     # Gen data
     data = fetch_asset(asset)
@@ -28,122 +31,180 @@ def gen_charts(asset, chart_size={"width": 560, "height": 150}):
     cum_flow_total = data.cum_flow_total
 
     # Create bindings for interval selection
-    scale_selection = alt.selection_interval(encodings=["x"],bind="scales")
+    scale_selection = alt.selection_interval(encodings=["x"], bind="scales")
 
     # Line chart of price
     price = (
-        alt.Chart(price)
-        .mark_line()
-        .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount={"interval": "month", "step": 1}), title=""),
-            y=alt.Y("Price:Q").scale(zero=False),
-            color=alt.value("crimson"),
+        (
+            alt.Chart(price)
+            .mark_line()
+            .encode(
+                x=alt.X(
+                    "Date:T",
+                    axis=alt.Axis(tickCount={"interval": "month", "step": 1}),
+                    title="",
+                ),
+                y=alt.Y("Price:Q").scale(zero=False),
+                color=alt.value("crimson"),
+            )
         )
-    ).add_params(scale_selection).properties(
-        width=chart_size["width"],
-        height=chart_size["height"],
+        .add_params(scale_selection)
+        .properties(
+            width=chart_size["width"],
+            height=chart_size["height"],
+        )
     )
 
     trading_vol_individual = (
-        alt.Chart(etf_volumes)
-        .transform_fold(
-            etf_volumes.drop(columns="Date").columns.to_list(), as_=["Funds", "Volume"]
+        (
+            alt.Chart(etf_volumes)
+            .transform_fold(
+                etf_volumes.drop(columns="Date").columns.to_list(),
+                as_=["Funds", "Volume"],
+            )
+            .mark_line()
+            .encode(
+                x=alt.X(
+                    "Date:T",
+                    axis=alt.Axis(tickCount={"interval": "month", "step": 1}),
+                    title="",
+                ),
+                y=alt.Y("Volume:Q", title="Trading Volume Individual"),
+                color="Funds:N",
+            )
         )
-        .mark_line()
-        .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount={"interval": "month", "step": 1}), title=""),
-            y=alt.Y("Volume:Q", title="Trading Volume Individual"),
-            color="Funds:N",
+        .add_params(scale_selection)
+        .properties(
+            width=chart_size["width"],
+            height=chart_size["height"],
         )
-    ).add_params(scale_selection).properties(
-        width=chart_size["width"],
-        height=chart_size["height"],
     )
     trading_vol_total = (
-        alt.Chart(etf_volumes)
-        .transform_fold(
-            etf_volumes.drop(columns="Date").columns.to_list(), as_=["Funds", "Volume"]
+        (
+            alt.Chart(etf_volumes)
+            .transform_fold(
+                etf_volumes.drop(columns="Date").columns.to_list(),
+                as_=["Funds", "Volume"],
+            )
+            .mark_rule()
+            .encode(
+                x=alt.X(
+                    "Date:T",
+                    axis=alt.Axis(tickCount={"interval": "month", "step": 1}),
+                    title="",
+                ),
+                y=alt.Y("sum(Volume):Q", title="Trading Volume Total"),
+                color=alt.value("teal"),
+            )
         )
-        .mark_rule()
-        .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount={"interval": "month", "step": 1}), title=""),
-            y=alt.Y("sum(Volume):Q", title="Trading Volume Total"),
-            color=alt.value("teal"),
+        .add_params(scale_selection)
+        .properties(
+            width=chart_size["width"],
+            height=chart_size["height"],
         )
-    ).add_params(scale_selection).properties(
-        width=chart_size["width"],
-        height=chart_size["height"],
     )
 
     # Net flow individual
     net_flow_individual = (
-        alt.Chart(etf_flow_individual)
-        .transform_fold(
-            etf_flow_individual.drop(columns="Date").columns.to_list(),
-            as_=["Funds", "Net Flow"],
+        (
+            alt.Chart(etf_flow_individual)
+            .transform_fold(
+                etf_flow_individual.drop(columns="Date").columns.to_list(),
+                as_=["Funds", "Net Flow"],
+            )
+            .mark_line()
+            .encode(
+                x=alt.X(
+                    "Date:T",
+                    axis=alt.Axis(tickCount={"interval": "month", "step": 1}),
+                    title="",
+                ),
+                y=alt.Y("Net Flow:Q", title="Net Flow Individual"),
+                color="Funds:N",
+            )
         )
-        .mark_line()
-        .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount={"interval": "month", "step": 1}), title=""),
-            y=alt.Y("Net Flow:Q", title="Net Flow Individual"),
-            color="Funds:N",
+        .add_params(scale_selection)
+        .properties(
+            width=chart_size["width"],
+            height=chart_size["height"],
         )
-    ).add_params(scale_selection).properties(
-        width=chart_size["width"],
-        height=chart_size["height"],
     )
     net_flow_total = (
-        alt.Chart(etf_flow_total)
-        .mark_rule()
-        .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount={"interval": "month", "step": 1}), title=""),
-            y=alt.Y("Total:Q", title="Net Flow Total"),
-            color=alt.condition(
-                alt.datum.Total > 0,
-                alt.value("seagreen"),  # The positive color
-                alt.value("orangered"),  # The negative color
-            ),
+        (
+            alt.Chart(etf_flow_total)
+            .mark_rule()
+            .encode(
+                x=alt.X(
+                    "Date:T",
+                    axis=alt.Axis(tickCount={"interval": "month", "step": 1}),
+                    title="",
+                ),
+                y=alt.Y("Total:Q", title="Net Flow Total"),
+                color=alt.condition(
+                    alt.datum.Total > 0,
+                    alt.value("seagreen"),  # The positive color
+                    alt.value("orangered"),  # The negative color
+                ),
+            )
         )
-    ).add_params(scale_selection).properties(
-        width=chart_size["width"],
-        height=chart_size["height"],
+        .add_params(scale_selection)
+        .properties(
+            width=chart_size["width"],
+            height=chart_size["height"],
+        )
     )
 
     # Stacking area chart of flow from individual funds
     cum_flow_individual = (
-        alt.Chart(cum_flow_individual)
-        .transform_fold(
-            cum_flow_individual.drop(columns="Date").columns.to_list(),
-            as_=["Funds", "Net Flow"],
+        (
+            alt.Chart(cum_flow_individual)
+            .transform_fold(
+                cum_flow_individual.drop(columns="Date").columns.to_list(),
+                as_=["Funds", "Net Flow"],
+            )
+            .mark_area()
+            .encode(
+                x=alt.X(
+                    "Date:T",
+                    axis=alt.Axis(tickCount={"interval": "month", "step": 1}),
+                    title="",
+                ),
+                y=alt.Y("Net Flow:Q", title="Cumulative Flow Individual"),
+                color=alt.Color("Funds:N", scale=alt.Scale(scheme="tableau20")),
+            )
         )
-        .mark_area()
-        .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount={"interval": "month", "step": 1}), title=""),
-            y=alt.Y("Net Flow:Q", title="Cumulative Flow Individual"),
-            color=alt.Color("Funds:N", scale=alt.Scale(scheme="tableau20")),
+        .add_params(scale_selection)
+        .properties(
+            width=chart_size["width"],
+            height=chart_size["height"],
         )
-    ).add_params(scale_selection).properties(
-        width=chart_size["width"],
-        height=chart_size["height"],
     )
 
     # Area chart for cumulative flow
     cum_flow_total = (
-        alt.Chart(cum_flow_total)
-        .transform_calculate(
-            negative="datum.Total < 0",
+        (
+            alt.Chart(cum_flow_total)
+            .transform_calculate(
+                negative="datum.Total < 0",
+            )
+            .mark_area()
+            .encode(
+                x=alt.X(
+                    "Date:T",
+                    axis=alt.Axis(tickCount={"interval": "month", "step": 1}),
+                    title="",
+                ),
+                y=alt.Y("Total:Q", title="Cumulative Flow Total", impute={"value": 0}),
+                color=alt.Color(
+                    "negative:N", title="Negative Flow", scale=alt.Scale(scheme="set2")
+                ),
+            )
         )
-        .mark_area()
-        .encode(
-            x=alt.X("Date:T", axis=alt.Axis(tickCount={"interval": "month", "step": 1}), title=""),
-            y=alt.Y("Total:Q", title="Cumulative Flow Total", impute={"value": 0}),
-            color=alt.Color(
-                "negative:N", title="Negative Flow", scale=alt.Scale(scheme="set2")
-            ),
+        .add_params(scale_selection)
+        .properties(
+            width=chart_size["width"],
+            height=chart_size["height"],
         )
-    ).add_params(scale_selection).properties(
-        width=chart_size["width"],
-        height=chart_size["height"],
     )
 
     return SimpleNamespace(
@@ -156,27 +217,33 @@ def gen_charts(asset, chart_size={"width": 560, "height": 150}):
         cum_flow_total=cum_flow_total,
     )
 
+
 def asset_charts(asset: str, chart_size={"width": "container", "height": 150}):
     charts = gen_charts(asset, chart_size)
 
     # Vertical concat the charts in each asset into single column of that asset
     all_charts = (
-        charts.price
-        & charts.trading_vol_individual
-        & charts.trading_vol_total
-        & charts.net_flow_individual
-        & charts.net_flow_total
-        & charts.cum_flow_individual
-        & charts.cum_flow_total
-    ).resolve_scale(
-        color="independent",
-    ).properties(
-        title=f"{asset} ETF",
+        (
+            charts.price
+            & charts.trading_vol_individual
+            & charts.trading_vol_total
+            & charts.net_flow_individual
+            & charts.net_flow_total
+            & charts.cum_flow_individual
+            & charts.cum_flow_total
+        )
+        .resolve_scale(
+            color="independent",
+        )
+        .properties(
+            title=f"{asset} ETF",
+        )
     )
 
     return all_charts
 
-if __name__ == "__main__":
+
+def app():
     # Set page config
     st.set_page_config(layout="wide", page_icon="📈")
     # Initialize pygwalker communication
@@ -196,8 +263,12 @@ if __name__ == "__main__":
     eth = fetch_asset("ETH")
 
     with dashboard_tab:
-        btc_charts = asset_charts("BTC", chart_size={"width": "container", "height": 150})
-        eth_charts = asset_charts("ETH", chart_size={"width": "container", "height": 150})
+        btc_charts = asset_charts(
+            "BTC", chart_size={"width": "container", "height": 150}
+        )
+        eth_charts = asset_charts(
+            "ETH", chart_size={"width": "container", "height": 150}
+        )
         # Display charts
         btc_chart_col, eth_chart_col = st.columns(2)
         with btc_chart_col:
@@ -239,3 +310,7 @@ if __name__ == "__main__":
         df = pd.concat([btc_price, eth_price])
         df.Date = df.Date.astype(str)
         StreamlitRenderer(df).explorer()
+
+
+if __name__ == "__main__":
+    app()
