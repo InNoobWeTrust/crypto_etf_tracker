@@ -14,5 +14,5 @@ dependencies = [
     "streamlit>=1.43.2",
     "vega>=4.1.0",
     "workalendar>=17.0.0",
-    "yfinance[nospam,repair]==0.2.54",
+    "yfinance[nospam,repair]==0.2.58",
 ]
